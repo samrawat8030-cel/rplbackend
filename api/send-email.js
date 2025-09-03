@@ -1,5 +1,7 @@
 const nodemailer = require("nodemailer");
 const formidable = require("formidable");
+const cors = require("cors");
+app.use(cors({ origin: "https://rplleague.com" })); // frontend domain
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
