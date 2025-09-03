@@ -1,10 +1,10 @@
 const express = require("express");
 require("dotenv").config();
 const cors = require("cors");
-app.use(cors({ origin: "https://rplleague.com" })); // frontend domain
 const emailRoutes = require("./api/send-email");
 
 const app = express();
+app.use(cors({ origin: "https://rplleague.com" })); // frontend domain
 app.use(express.json());
 
 // Routes
