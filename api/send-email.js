@@ -6,6 +6,10 @@ const path = require("path");
 require("dotenv").config();
 
 module.exports = async (req, res) => {
+  // ✅ Allow CORS
+  res.setHeader("Access-Control-Allow-Origin", "*"); // Or your domain instead of *
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
