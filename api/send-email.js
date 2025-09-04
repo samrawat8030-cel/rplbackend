@@ -1,13 +1,13 @@
 const nodemailer = require("nodemailer");
 const formidable = require("formidable");
-const cors = require("cors");
+const { google } = require("googleapis");
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
 
 module.exports = async (req, res) => {
   // ✅ Allow CORS
-  res.setHeader("Access-Control-Allow-Origin", "*"); // Or your domain instead of *
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method !== "POST") {
@@ -30,6 +30,33 @@ module.exports = async (req, res) => {
         return res.status(400).json({ success: false, message: "Recipients are required." });
       }
 
+      // 1️⃣ Google Sheets Auth
+      const auth = new google.auth.GoogleAuth({
+        credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS),
+        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+      });
+      const sheets = google.sheets({ version: "v4", auth });
+
+      // 2️⃣ Append row to Google Sheet
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "Sheet1!A:F",
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [
+            [
+              String(name),
+              String(email),
+              String(phone),
+              String(category),
+              String(village),
+              String(transactionId)
+            ]
+          ]
+        },
+      });
+
+      // 3️⃣ Setup Nodemailer
       const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
@@ -38,17 +65,14 @@ module.exports = async (req, res) => {
         },
       });
 
-      // 📸 Screenshot handling (attachment only, no inline)
+      // 4️⃣ Handle optional screenshot attachment
       let screenshotAttachment = [];
-      console.log(files?.screenshot, 'files screenshot');
       if (files.screenshot) {
         const screenshotFile = Array.isArray(files.screenshot)
           ? files.screenshot[0]
           : files.screenshot;
-
         if (screenshotFile && screenshotFile.filepath) {
           const fileBuffer = fs.readFileSync(screenshotFile.filepath);
-
           screenshotAttachment.push({
             filename: screenshotFile.originalFilename,
             content: fileBuffer,
@@ -56,7 +80,7 @@ module.exports = async (req, res) => {
         }
       }
 
-      // 1️⃣ Organizer Email
+      // 5️⃣ Send emails to organizers
       for (let recipient of recipients) {
         await transporter.sendMail({
           from: `"SMVDK Sports World Pvt Limited" <${process.env.EMAIL_USER}>`,
@@ -88,7 +112,7 @@ module.exports = async (req, res) => {
         });
       }
 
-      // 2️⃣ Confirmation Email to Player
+      // 6️⃣ Send confirmation email to player
       await transporter.sendMail({
         from: `"SMVDK Sports World Pvt Limited" <${process.env.EMAIL_USER}>`,
         to: email,
@@ -118,14 +142,10 @@ module.exports = async (req, res) => {
         ],
       });
 
-      return res.status(200).json({ success: true, message: "Emails sent successfully!" });
+      return res.status(200).json({ success: true, message: "Sheet updated & emails sent successfully!" });
     } catch (error) {
-      console.error("Email error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to send registration email",
-        error: error.message,
-      });
+      console.error("Error:", error);
+      return res.status(500).json({ success: false, error: error.message });
     }
   });
 };
