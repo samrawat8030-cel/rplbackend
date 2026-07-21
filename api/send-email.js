@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
 
     try {
       const recipients = JSON.parse(fields.recipients || "[]");
-      const { name, email, phone, category, village, transactionId } = fields;
+      const { name, email, phone, category, address, adhaar, transactionId } = fields;
 
       if (!recipients || recipients.length === 0) {
         return res.status(400).json({ success: false, message: "Recipients are required." });
@@ -49,10 +49,36 @@ module.exports = async (req, res) => {
       });
       const sheets = google.sheets({ version: "v4", auth });
 
-      // 2️⃣ Append row to Google Sheet
+      // 2️⃣ Check Aadhaar duplication in Google Sheet
+      const normalizedAdhaar = String(adhaar || "").trim();
+      if (!normalizedAdhaar) {
+        return res.status(400).json({
+          success: false,
+          errorCode: "AADHAAR_REQUIRED",
+          message: "Aadhaar number is required for registration.",
+          userMessage: "Please provide a valid Aadhaar number before submitting the registration.",
+        });
+      }
+
+      const existingAdhaarResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "Sheet1!G:G",
+      });
+      const existingAdhaars = (existingAdhaarResponse.data.values || []).flat().map((value) => String(value).trim());
+
+      if (existingAdhaars.includes(normalizedAdhaar)) {
+        return res.status(409).json({
+          success: false,
+          errorCode: "AADHAAR_DUPLICATE",
+          message: "This Aadhaar number is already registered. Please use a different Aadhaar number to submit a new registration.",
+          userMessage: "Aadhaar number already exists in our records. Please resubmit using a different Aadhaar number.",
+        });
+      }
+
+      // 3️⃣ Append row to Google Sheet
       await sheets.spreadsheets.values.append({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "Sheet1!A:F",
+        range: "Sheet1!A:G",
         valueInputOption: "USER_ENTERED",
         requestBody: {
           values: [
@@ -61,8 +87,9 @@ module.exports = async (req, res) => {
               String(email),
               String(phone),
               String(category),
-              String(village),
-              String(transactionId)
+              String(address),
+              String(transactionId),
+              normalizedAdhaar,
             ]
           ]
         },
@@ -107,7 +134,7 @@ module.exports = async (req, res) => {
               <li><strong>Email:</strong> ${email}</li>
               <li><strong>Phone:</strong> ${phone}</li>
               <li><strong>Category:</strong> ${category}</li>
-              <li><strong>Village:</strong> ${village}</li>
+              <li><strong>Village:</strong> ${address}</li>
             </ul>
             <h3>💳 Payment Info:</h3>
             <p><strong>Transaction ID:</strong> ${transactionId}</p>
@@ -138,7 +165,7 @@ module.exports = async (req, res) => {
             <li><strong>Email:</strong> ${email}</li>
             <li><strong>Phone:</strong> ${phone}</li>
             <li><strong>Category:</strong> ${category}</li>
-            <li><strong>Village:</strong> ${village}</li>
+            <li><strong>Village:</strong> ${address}</li>
           </ul>
           <h3>💳 Payment Info:</h3>
           <p><strong>Transaction ID:</strong> ${transactionId}</p>
