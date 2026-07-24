@@ -134,7 +134,8 @@ module.exports = async (req, res) => {
               <li><strong>Email:</strong> ${email}</li>
               <li><strong>Phone:</strong> ${phone}</li>
               <li><strong>Category:</strong> ${category}</li>
-              <li><strong>Village:</strong> ${address}</li>
+              <li><strong>Address:</strong> ${address}</li>
+              <li><strong>Adhaar:</strong> ${normalizedAdhaar}</li>
             </ul>
             <h3>💳 Payment Info:</h3>
             <p><strong>Transaction ID:</strong> ${transactionId}</p>
@@ -165,7 +166,8 @@ module.exports = async (req, res) => {
             <li><strong>Email:</strong> ${email}</li>
             <li><strong>Phone:</strong> ${phone}</li>
             <li><strong>Category:</strong> ${category}</li>
-            <li><strong>Village:</strong> ${address}</li>
+            <li><strong>Address:</strong> ${address}</li>
+            <li><strong>Adhaar:</strong> ${normalizedAdhaar}</li>
           </ul>
           <h3>💳 Payment Info:</h3>
           <p><strong>Transaction ID:</strong> ${transactionId}</p>
