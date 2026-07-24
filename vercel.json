@@ -4,12 +4,20 @@
     {
       "src": "api/send-email.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/check-aadhaar.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/send-email",
       "dest": "api/send-email.js"
+    },
+    {
+      "src": "/api/check-aadhaar",
+      "dest": "api/check-aadhaar.js"
     }
   ]
 }
